@@ -38,8 +38,12 @@ npm install
 ### 2. Supabaseプロジェクトの準備
 
 1. [Supabase](https://supabase.com/dashboard) で新規プロジェクトを作成(チームで1つ共有する運用を想定)
-2. `supabase/migrations/0001_init.sql` の内容をSupabaseダッシュボードのSQL Editorで実行し、テーブル・RLSポリシーを作成
+2. `supabase/migrations/` 配下のSQLを**ファイル名の番号順に**SupabaseダッシュボードのSQL Editorで実行する
+   - `0001_init.sql`: テーブル・RLSポリシーを作成
+   - `0002_add_data_integrity_constraints.sql`: 数値範囲・出席記録の重複を防ぐ制約を追加
 3. プロジェクトの Settings > API から `Project URL` と `anon public key` を取得
+
+> **既に `0001_init.sql` だけを適用済みの環境に後から `0002` を足す場合**、既存データが制約に違反しているとALTER TABLEが失敗します。事前確認SQLと違反データの直し方を [docs/データ整合性ルール.md](docs/データ整合性ルール.md) にまとめてあるので、そちらの手順に従ってください。
 
 ### 3. 環境変数の設定
 
@@ -98,8 +102,15 @@ src/
     types/         # ドメイン型定義
   proxy.ts          # 認証セッション保護(Next.js 16のProxy機能。旧middleware)
 supabase/
-  migrations/       # DBスキーマ(SQL)
+  migrations/       # DBスキーマ(SQL)。番号順に実行する
+docs/               # 要件定義・設計メモ
 ```
+
+## データ整合性
+
+不正な値や重複記録は、フォーム・保存Action・DB制約の3層で防いでいる。どの検証をどこに置くか、既存Supabase環境へ制約を追加する手順は [docs/データ整合性ルール.md](docs/データ整合性ルール.md) を参照。
+
+評価割合の合計100%だけは複数行にまたがる条件のためDB制約では表現できず、保存Action側で検証する。
 
 ## 現在の実装状況
 
