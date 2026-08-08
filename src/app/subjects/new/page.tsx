@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SubjectForm } from "@/components/subjects/SubjectForm";
+import { NewSubjectForm } from "@/components/subjects/NewSubjectForm";
 
 export default function NewSubjectPage() {
   return (
@@ -8,7 +8,7 @@ export default function NewSubjectPage() {
         ← 科目一覧に戻る
       </Link>
       <h1 className="text-xl font-semibold">科目を追加</h1>
-      <SubjectForm />
+      <NewSubjectForm />
     </div>
   );
 }
