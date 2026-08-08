@@ -155,10 +155,16 @@ export async function extractSubject(
     return { ok: false, error: "not_configured" };
   }
 
+  // .env の `GEMINI_MODEL=` は空文字として読み込まれるため、?? では既定値へ落ちない。
+  const configuredModel = deps.model ?? process.env.GEMINI_MODEL;
+
   const config = {
     fetchImpl: deps.fetchImpl ?? globalThis.fetch,
     apiKey,
-    model: deps.model ?? process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL,
+    model:
+      configuredModel === undefined || configuredModel.trim() === ""
+        ? DEFAULT_GEMINI_MODEL
+        : configuredModel.trim(),
     timeoutMs: deps.timeoutMs ?? EXTRACTION_TIMEOUT_MS,
   };
 

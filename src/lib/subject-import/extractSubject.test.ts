@@ -114,6 +114,25 @@ describe("extractSubject", () => {
 
       expect(String(fetchImpl.mock.calls[0][0])).toContain("gemini-2.5-flash-lite");
     });
+
+    it("環境変数が空文字なら既定のモデルを使う", async () => {
+      // .env に `GEMINI_MODEL=` と書くと空文字で読み込まれ、?? では既定値へ落ちない。
+      process.env.GEMINI_MODEL = "";
+      const fetchImpl = vi.fn().mockResolvedValue(geminiResponse(JSON.stringify(VALID_DRAFT)));
+
+      await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
+
+      expect(String(fetchImpl.mock.calls[0][0])).toContain(`models/${DEFAULT_GEMINI_MODEL}:`);
+    });
+
+    it("モデル名の前後の空白を取り除く", async () => {
+      process.env.GEMINI_MODEL = "  gemini-2.5-flash-lite  ";
+      const fetchImpl = vi.fn().mockResolvedValue(geminiResponse(JSON.stringify(VALID_DRAFT)));
+
+      await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
+
+      expect(String(fetchImpl.mock.calls[0][0])).toContain("models/gemini-2.5-flash-lite:");
+    });
   });
 
   describe("異常系", () => {
