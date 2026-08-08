@@ -17,9 +17,8 @@ export function DeleteTestRecordButton({
   subjectId,
   label,
 }: DeleteTestRecordButtonProps) {
-  const deleteAction = deleteTestRecordAction.bind(null, subjectId);
   const [state, formAction, pending] = useActionState(
-    deleteAction,
+    deleteTestRecordAction,
     initialTestRecordFormState,
   );
 
@@ -31,6 +30,8 @@ export function DeleteTestRecordButton({
 
   return (
     <form action={formAction} onSubmit={handleSubmit}>
+      {/* Action は科目IDをFormDataから受け取る。画面固定の値をhiddenで送る。 */}
+      <input type="hidden" name="subjectId" value={subjectId} />
       <input type="hidden" name="recordId" value={recordId} />
       <Button
         className="border bg-white text-red-700"

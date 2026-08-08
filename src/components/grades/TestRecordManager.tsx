@@ -2,10 +2,12 @@
 
 import { useCallback, useState } from "react";
 import { DeleteTestRecordButton } from "@/components/grades/DeleteTestRecordButton";
-import { TestRecordForm } from "@/components/grades/TestRecordForm";
+import {
+  TestRecordForm,
+  type TestRecordFormValue,
+} from "@/components/grades/TestRecordForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { TestRecordFormValues } from "@/lib/grades/testRecordFormValidation";
 import type { GradeItem, TestRecord } from "@/lib/types/domain";
 
 interface TestRecordManagerProps {
@@ -14,7 +16,7 @@ interface TestRecordManagerProps {
   records: TestRecord[];
 }
 
-const EMPTY_VALUE: TestRecordFormValues = {
+const EMPTY_VALUE: TestRecordFormValue = {
   recordId: "",
   gradeItemId: "",
   score: "",
@@ -31,9 +33,9 @@ export function TestRecordManager({
   gradeItems,
   records,
 }: TestRecordManagerProps) {
-  const [value, setValue] = useState<TestRecordFormValues>(EMPTY_VALUE);
+  const [value, setValue] = useState<TestRecordFormValue>(EMPTY_VALUE);
 
-  const handleChange = useCallback((next: TestRecordFormValues) => {
+  const handleChange = useCallback((next: TestRecordFormValue) => {
     setValue(next);
   }, []);
 

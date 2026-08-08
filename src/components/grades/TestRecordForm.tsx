@@ -4,19 +4,28 @@ import { useActionState } from "react";
 import { saveTestRecordAction } from "@/app/subjects/[id]/tests/actions";
 import { Button } from "@/components/ui/Button";
 import { initialTestRecordFormState } from "@/lib/grades/testRecordFormState";
-import {
-  MEMO_MAX_LENGTH,
-  type TestRecordFormValues,
-} from "@/lib/grades/testRecordFormValidation";
 import type { GradeItem } from "@/lib/types/domain";
+
+/** 画面で保持する入力値。subjectId は hidden で送るため含めない。 */
+export interface TestRecordFormValue {
+  /** 更新対象の記録ID。新規登録では空文字。 */
+  recordId: string;
+  gradeItemId: string;
+  score: string;
+  recordedAt: string;
+  memo: string;
+}
 
 interface TestRecordFormProps {
   subjectId: string;
   gradeItems: GradeItem[];
-  value: TestRecordFormValues;
-  onChange: (value: TestRecordFormValues) => void;
+  value: TestRecordFormValue;
+  onChange: (value: TestRecordFormValue) => void;
   onCancelEdit: () => void;
 }
+
+/** 入力欄で受け付けるメモの上限。Action側に文字数の検証は無い。 */
+const MEMO_MAX_LENGTH = 500;
 
 const inputClassName = "rounded-md border px-3 py-2";
 
@@ -28,9 +37,8 @@ export function TestRecordForm({
   onChange,
   onCancelEdit,
 }: TestRecordFormProps) {
-  const saveAction = saveTestRecordAction.bind(null, subjectId);
   const [state, formAction, pending] = useActionState(
-    saveAction,
+    saveTestRecordAction,
     initialTestRecordFormState,
   );
 
@@ -39,6 +47,8 @@ export function TestRecordForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4" noValidate>
+      {/* Action は科目IDをFormDataから受け取る。画面固定の値をhiddenで送る。 */}
+      <input type="hidden" name="subjectId" value={subjectId} />
       <input type="hidden" name="recordId" value={value.recordId} />
 
       <label className="flex flex-col gap-1 text-sm" htmlFor="grade-item">
