@@ -114,6 +114,8 @@ export function parseSubjectFormData(
 
     gradeItems.push({
       id: `grade-item-${index}`,
+      // 保存済み評価項目のみIDが送られてくる。新規追加の行では未設定のままにする。
+      ...(item.id === undefined || item.id === "" ? {} : { persistedId: item.id }),
       name: item.name ?? "",
       category,
       weight: item.weight ?? "",
