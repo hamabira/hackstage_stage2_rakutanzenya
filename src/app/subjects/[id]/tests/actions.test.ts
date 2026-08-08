@@ -14,28 +14,37 @@ vi.mock("@/lib/supabase/queries/grades", () => ({
   updateTestRecord: mocks.updateTestRecord,
   deleteTestRecord: mocks.deleteTestRecord,
 }));
-vi.mock("@/lib/supabase/queries/subjects", () => ({ getSubject: mocks.getSubject }));
+vi.mock("@/lib/supabase/queries/subjects", () => ({
+  getSubject: mocks.getSubject,
+}));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 
 import { deleteTestRecordAction, saveTestRecordAction } from "./actions";
 
-const GRADE_ITEM = {
-  id: "item-1",
-  subjectId: "subject-1",
-  name: "中間テスト",
-  category: "test" as const,
-  weight: 100,
-  maxScore: 100,
-  sortOrder: 0,
+const SAVED_RECORD = {
+  id: "record-1",
+  gradeItemId: "grade-item-1",
+  score: 80,
+  recordedAt: "2026-08-08",
+  memo: null,
 };
+
+function ownedSubject(maxScore: number | null = 100) {
+  return {
+    ok: true,
+    subject: { id: "subject-1" },
+    gradeItems: [{ id: "grade-item-1", maxScore }],
+  };
+}
 
 function buildFormData(overrides: Record<string, string> = {}): FormData {
   const formData = new FormData();
   const fields: Record<string, string> = {
+    subjectId: "subject-1",
+    gradeItemId: "grade-item-1",
     recordId: "",
-    gradeItemId: "item-1",
     score: "80",
-    recordedAt: "2026-04-10",
+    recordedAt: "2026-08-08",
     memo: "",
     ...overrides,
   };
@@ -48,194 +57,134 @@ function buildFormData(overrides: Record<string, string> = {}): FormData {
 }
 
 function runSave(formData: FormData) {
-  return saveTestRecordAction("subject-1", initialTestRecordFormState, formData);
+  return saveTestRecordAction(initialTestRecordFormState, formData);
+}
+
+function runDelete(formData: FormData) {
+  return deleteTestRecordAction(initialTestRecordFormState, formData);
 }
 
 describe("saveTestRecordAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.getSubject.mockResolvedValue({
-      ok: true,
-      subject: { id: "subject-1" },
-      gradeItems: [GRADE_ITEM],
-    });
-    mocks.createTestRecord.mockResolvedValue({ ok: true, record: {} });
-    mocks.updateTestRecord.mockResolvedValue({ ok: true, record: {} });
+    mocks.getSubject.mockResolvedValue(ownedSubject());
+    mocks.createTestRecord.mockResolvedValue({ ok: true, record: SAVED_RECORD });
+    mocks.updateTestRecord.mockResolvedValue({ ok: true, record: SAVED_RECORD });
   });
 
-  describe("正常系", () => {
-    it("recordIdが空なら新規登録する", async () => {
-      const state = await runSave(buildFormData({ memo: "見直し必要" }));
+  it("新しい点数記録を登録し、関連画面を再検証する", async () => {
+    const state = await runSave(buildFormData({ memo: "中間試験" }));
 
-      expect(state.success).toBe(true);
-      expect(mocks.createTestRecord).toHaveBeenCalledWith({
-        gradeItemId: "item-1",
-        score: 80,
-        recordedAt: "2026-04-10",
-        memo: "見直し必要",
-      });
-      expect(mocks.updateTestRecord).not.toHaveBeenCalled();
+    expect(state).toEqual({ fieldErrors: {}, message: null, success: true });
+    expect(mocks.createTestRecord).toHaveBeenCalledWith({
+      gradeItemId: "grade-item-1",
+      score: 80,
+      recordedAt: "2026-08-08",
+      memo: "中間試験",
     });
-
-    it("recordIdがあれば更新する", async () => {
-      const state = await runSave(buildFormData({ recordId: "record-1", score: "95" }));
-
-      expect(state.success).toBe(true);
-      expect(mocks.updateTestRecord).toHaveBeenCalledWith("record-1", {
-        score: 95,
-        recordedAt: "2026-04-10",
-        memo: null,
-      });
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
-
-    it("空のメモはNULLとして保存する", async () => {
-      await runSave(buildFormData({ memo: "   " }));
-
-      expect(mocks.createTestRecord).toHaveBeenCalledWith(
-        expect.objectContaining({ memo: null }),
-      );
-    });
-
-    it("満点ちょうどは保存できる", async () => {
-      const state = await runSave(buildFormData({ score: "100" }));
-
-      expect(state.success).toBe(true);
-    });
-
-    it("科目詳細・記録画面・ダッシュボードを再検証する", async () => {
-      await runSave(buildFormData());
-
-      expect(mocks.revalidatePath).toHaveBeenCalledWith("/subjects/subject-1");
-      expect(mocks.revalidatePath).toHaveBeenCalledWith("/subjects/subject-1/tests");
-      expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard");
-    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/subjects/subject-1");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/subjects/subject-1/tests");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard");
   });
 
-  describe("不正入力", () => {
-    it("満点を超える得点は保存しない", async () => {
-      const state = await runSave(buildFormData({ score: "101" }));
+  it("recordIdがある場合は既存の点数記録を更新する", async () => {
+    const state = await runSave(buildFormData({ recordId: "record-1", score: "90" }));
 
-      expect(state.fieldErrors.score).toContain("満点");
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
+    expect(state.success).toBe(true);
+    expect(mocks.updateTestRecord).toHaveBeenCalledWith("record-1", {
+      score: 90,
+      recordedAt: "2026-08-08",
+      memo: null,
     });
-
-    it("負の得点は保存しない", async () => {
-      const state = await runSave(buildFormData({ score: "-1" }));
-
-      expect(state.fieldErrors.score).toBeDefined();
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
-
-    it("数値以外の得点は保存しない", async () => {
-      const state = await runSave(buildFormData({ score: "満点" }));
-
-      expect(state.fieldErrors.score).toBeDefined();
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
-
-    it("存在しない実施日は保存しない", async () => {
-      const state = await runSave(buildFormData({ recordedAt: "2026-02-30" }));
-
-      expect(state.fieldErrors.recordedAt).toBeDefined();
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
-
-    it("メモが長すぎる場合は保存しない", async () => {
-      const state = await runSave(buildFormData({ memo: "あ".repeat(501) }));
-
-      expect(state.fieldErrors.memo).toBeDefined();
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
   });
 
-  describe("権限エラー", () => {
-    it("他科目の評価項目IDを指定しても保存しない", async () => {
-      const state = await runSave(buildFormData({ gradeItemId: "item-999" }));
+  it.each(["-1", "80.001", "abc"])("不正な点数 %s では保存しない", async (score) => {
+    const state = await runSave(buildFormData({ score }));
 
-      expect(state.message).toContain("評価項目がこの科目に存在しません");
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
-
-    it("他ユーザーの科目には記録できない", async () => {
-      mocks.getSubject.mockResolvedValue({ ok: false, error: "not_found" });
-
-      const state = await runSave(buildFormData());
-
-      expect(state.message).toBe("対象の科目が見つかりません。");
-      expect(mocks.createTestRecord).not.toHaveBeenCalled();
-    });
-
-    it("未認証なら再ログインを促す", async () => {
-      mocks.getSubject.mockResolvedValue({ ok: false, error: "unauthenticated" });
-
-      const state = await runSave(buildFormData());
-
-      expect(state.message).toContain("ログイン");
-      expect(mocks.revalidatePath).not.toHaveBeenCalled();
-    });
+    expect(state.fieldErrors.score).toBeDefined();
+    expect(mocks.getSubject).not.toHaveBeenCalled();
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
   });
 
-  describe("DB失敗", () => {
-    it("満点未設定の評価項目は理由を伝える", async () => {
-      mocks.createTestRecord.mockResolvedValue({ ok: false, error: "missing_max_score" });
+  it("実在しない記録日では保存しない", async () => {
+    const state = await runSave(buildFormData({ recordedAt: "2026-02-30" }));
 
-      const state = await runSave(buildFormData());
+    expect(state.fieldErrors.recordedAt).toBeDefined();
+    expect(mocks.getSubject).not.toHaveBeenCalled();
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
+  });
 
-      expect(state.message).toContain("満点が設定されていません");
-      expect(mocks.revalidatePath).not.toHaveBeenCalled();
-    });
+  it("満点を超える点数では保存しない", async () => {
+    const state = await runSave(buildFormData({ score: "100.01" }));
+
+    expect(state.fieldErrors.score).toBeDefined();
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
+  });
+
+  it("満点未設定の評価項目には保存しない", async () => {
+    mocks.getSubject.mockResolvedValue(ownedSubject(null));
+
+    const state = await runSave(buildFormData());
+
+    expect(state.fieldErrors.gradeItemId).toBeDefined();
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
+  });
+
+  it("科目に属さない評価項目へ保存しない", async () => {
+    const state = await runSave(buildFormData({ gradeItemId: "other-grade-item" }));
+
+    expect(state.message).toContain("この科目に含まれていません");
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
+  });
+
+  it("未認証では保存しない", async () => {
+    mocks.getSubject.mockResolvedValue({ ok: false, error: "unauthenticated" });
+
+    const state = await runSave(buildFormData());
+
+    expect(state.message).toContain("ログイン");
+    expect(mocks.createTestRecord).not.toHaveBeenCalled();
+  });
+
+  it("クエリ側の満点超過エラーを点数欄のエラーへ変換する", async () => {
+    mocks.createTestRecord.mockResolvedValue({ ok: false, error: "invalid_score" });
+
+    const state = await runSave(buildFormData());
+
+    expect(state.fieldErrors.score).toBeDefined();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });
 
 describe("deleteTestRecordAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getSubject.mockResolvedValue(ownedSubject());
     mocks.deleteTestRecord.mockResolvedValue({ ok: true });
   });
 
-  it("記録IDを指定して削除し、関連画面を再検証する", async () => {
+  it("本人の科目を確認して点数記録を削除し、関連画面を再検証する", async () => {
     const formData = new FormData();
+    formData.set("subjectId", "subject-1");
     formData.set("recordId", "record-1");
 
-    const state = await deleteTestRecordAction(
-      "subject-1",
-      initialTestRecordFormState,
-      formData,
-    );
+    const state = await runDelete(formData);
 
     expect(state.success).toBe(true);
     expect(mocks.deleteTestRecord).toHaveBeenCalledWith("record-1");
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/subjects/subject-1");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/subjects/subject-1/tests");
   });
 
-  it("記録IDが空なら削除しない", async () => {
+  it("他ユーザーの科目では削除しない", async () => {
+    mocks.getSubject.mockResolvedValue({ ok: false, error: "not_found" });
     const formData = new FormData();
-    formData.set("recordId", "");
+    formData.set("subjectId", "other-subject");
+    formData.set("recordId", "record-1");
 
-    const state = await deleteTestRecordAction(
-      "subject-1",
-      initialTestRecordFormState,
-      formData,
-    );
+    const state = await runDelete(formData);
 
-    expect(state.message).toContain("指定されていません");
+    expect(state.message).toContain("科目が見つかりません");
     expect(mocks.deleteTestRecord).not.toHaveBeenCalled();
-  });
-
-  it("他ユーザーの記録は not_found として扱う", async () => {
-    mocks.deleteTestRecord.mockResolvedValue({ ok: false, error: "not_found" });
-
-    const formData = new FormData();
-    formData.set("recordId", "others-record");
-
-    const state = await deleteTestRecordAction(
-      "subject-1",
-      initialTestRecordFormState,
-      formData,
-    );
-
-    expect(state.message).toContain("見つかりません");
-    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });

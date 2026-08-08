@@ -42,6 +42,14 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
+
+    // 認証クッキーが残っているのに検証できない場合は、期限切れとして扱う。
+    // クッキーが無い場合は、そもそも未ログインでの直接アクセス。
+    const hasAuthCookie = request.cookies
+      .getAll()
+      .some((cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("auth-token"));
+    url.searchParams.set("reason", hasAuthCookie ? "session_expired" : "login_required");
+
     const redirectResponse = NextResponse.redirect(url);
     copyCookies(supabaseResponse, redirectResponse);
     return setPrivateNoStore(redirectResponse);

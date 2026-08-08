@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteSubjectForm } from "@/components/subjects/DeleteSubjectForm";
-import { SubjectForm } from "@/components/subjects/SubjectForm";
+import { EditSubjectForm } from "@/components/subjects/EditSubjectForm";
 import { getSubject } from "@/lib/supabase/queries/subjects";
 
-// TODO: Supabaseからの科目データ取得は後続issueで行う(評価方法編集UI実装issue)
 export default async function EditSubjectPage({
   params,
 }: {
@@ -23,7 +22,10 @@ export default async function EditSubjectPage({
         ← 科目詳細に戻る
       </Link>
       <h1 className="text-xl font-semibold">評価方法を編集</h1>
-      <SubjectForm />
+      <EditSubjectForm
+        gradeItems={subjectResult.gradeItems}
+        subject={subjectResult.subject}
+      />
       <section className="rounded-md border border-red-200 p-4">
         <h2 className="font-medium text-red-800">危険な操作</h2>
         <p className="mt-2 text-sm text-gray-600">

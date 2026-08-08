@@ -1,10 +1,6 @@
 import type { TestRecordFormErrors } from "@/lib/grades/testRecordFormValidation";
 
-/**
- * 得点記録Actionの結果。useActionState の state として扱う。
- * fieldErrors はフィールド名をキーにしたエラー文、
- * message はフォーム全体に対するエラー文(未認証・権限エラーなど)。
- */
+/** 点数記録Actionがフォームへ返す状態。 */
 export interface TestRecordFormState {
   fieldErrors: TestRecordFormErrors;
   message: string | null;
