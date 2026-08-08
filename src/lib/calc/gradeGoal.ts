@@ -12,47 +12,62 @@ export interface GradeGoalResult {
   isAchievable: boolean;
 }
 
-/**
- * 目標成績を達成するために残り評価項目で必要な平均得点率（%）を計算する。
- *
- * - 実施済み項目: (currentScore / maxScore) * weight で加重スコアを積算。
- *   maxScore が null または 0 の項目は計算から除外する。
- * - 未実施項目の合計 weight が 0 の場合は既取得スコアで達成可否を判定。
- * - requiredAverageOnRemaining は 0〜100 の範囲を超えることがある（達成不可の場合）。
- */
+// 不明項目が一変数の場合の目標逆算
 export function calcRequiredScore(input: GradeGoalInput): GradeGoalResult {
   const { gradeItems, targetScore } = input;
 
-  let earnedWeightedScore = 0;
-  let remainingWeight = 0;
-
-  for (const item of gradeItems) {
-    const hasScore = item.currentScore != null;
-    const hasScorable = item.maxScore != null && item.maxScore > 0;
-
-    if (hasScore && hasScorable) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      earnedWeightedScore += (item.currentScore! / item.maxScore!) * item.weight;
-    } else if (!hasScore) {
-      // 未実施項目は残り重みに加算
-      remainingWeight += item.weight;
-    }
-  }
-
-  if (remainingWeight === 0) {
-    // 全項目実施済み：現在の加重スコアで達成可否を判定
+  // 評価項目が存在しない場合
+  if (!gradeItems || gradeItems.length === 0) {
     return {
       requiredAverageOnRemaining: null,
-      isAchievable: earnedWeightedScore >= targetScore,
+      isAchievable: targetScore <= 0,
     };
   }
 
-  // 残り項目で何%取れば目標に届くかを逆算
-  const required =
-    ((targetScore - earnedWeightedScore) / remainingWeight) * 100;
+  let achievedWeightedScore = 0;
+  let remainingWeight = 0;
+
+  // 確定済みスコアの集計と未完了項目の重み計算
+  for (const item of gradeItems) {
+    const weight = item.weight;
+    const maxScore = item.maxScore ?? 100;
+
+    if (item.currentScore !== null && item.currentScore !== undefined) {
+      // 確定項目: (獲得スコア / 満点) * 配点重み
+      const scoreRate = maxScore > 0 ? item.currentScore / maxScore : 0;
+      achievedWeightedScore += scoreRate * weight;
+    } else {
+      // 未完了項目（一変数）: 残りの配点重みを加算
+      remainingWeight += weight;
+    }
+  }
+
+  // 不足ポイントの計算
+  const neededWeightedScore = targetScore - achievedWeightedScore;
+
+  // すでに確定スコアのみで目標達成済みの場合
+  if (neededWeightedScore <= 0) {
+    return {
+      requiredAverageOnRemaining: 0,
+      isAchievable: true,
+    };
+  }
+
+  // 未完了項目が残っていない場合（未達確定）
+  if (remainingWeight <= 0) {
+    return {
+      requiredAverageOnRemaining: null,
+      isAchievable: false,
+    };
+  }
+
+  // 残り未完了項目（一変数）に必要な得点率 (%) と到達判定の算出
+  const requiredRate = (neededWeightedScore / remainingWeight) * 100;
+  const requiredAverageOnRemaining = Math.round(requiredRate * 10) / 10;
+  const isAchievable = requiredRate <= 100;
 
   return {
-    requiredAverageOnRemaining: Math.round(required * 10) / 10,
-    isAchievable: required <= 100,
+    requiredAverageOnRemaining,
+    isAchievable,
   };
 }
