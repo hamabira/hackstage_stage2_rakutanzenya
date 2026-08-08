@@ -1,30 +1,30 @@
 import Link from "next/link";
-import { getSubjectDashboardData } from "@/lib/supabase/queries/subjectDashboard";
-import { SubjectsTable } from "@/components/subjects/SubjectsTable";
+import { SubjectCard } from "@/components/subjects/SubjectCard";
+import { getSubjects } from "@/lib/supabase/queries/subjects";
 
 export default async function SubjectsPage() {
-  const { subjects, gradeItemsMap, attendanceResults, gradeResults } =
-    await getSubjectDashboardData();
+  const subjects = await getSubjects();
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">科目一覧</h1>
-        <Link
-          href="/subjects/new"
-          className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white"
-        >
+        <Link href="/subjects/new" className="text-sm underline">
           科目を追加
         </Link>
       </div>
 
-      <SubjectsTable
-        subjects={subjects}
-        gradeItemsMap={gradeItemsMap}
-        attendanceResults={attendanceResults}
-        gradeResults={gradeResults}
-        context="subjects"
-      />
+      {subjects.length === 0 ? (
+        <p className="text-sm text-gray-500">
+          登録済みの科目はまだありません。
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <SubjectCard key={subject.id} subject={subject} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

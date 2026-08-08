@@ -311,30 +311,3 @@ export async function deleteSubject(subjectId: string): Promise<DeleteSubjectRes
 
   return { ok: true };
 }
-
-export async function getSubjectById(id: string): Promise<Subject | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("subjects")
-    .select(
-      "id, user_id, name, total_class_count, attendance_required_rate, attendance_max_absences, attendance_affects_grade, target_grade_label, target_score",
-    )
-    .eq("id", id)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return {
-    id: data.id,
-    userId: data.user_id,
-    name: data.name,
-    totalClassCount: data.total_class_count,
-    attendanceRequiredRate: data.attendance_required_rate,
-    attendanceMaxAbsences: data.attendance_max_absences,
-    attendanceAffectsGrade: data.attendance_affects_grade,
-    targetGradeLabel: data.target_grade_label,
-    targetScore: data.target_score,
-  };
-}
