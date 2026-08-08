@@ -5,7 +5,10 @@ import {
   SIGNUP_MESSAGES,
   resolveSignupOutcome,
 } from "@/lib/auth/authMessages";
-import { getCredentials } from "@/lib/auth/credentials";
+import {
+  getCredentials,
+  isSignupPasswordValid,
+} from "@/lib/auth/credentials";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectWithMessage(message: string): never {
@@ -16,6 +19,10 @@ export async function signup(formData: FormData) {
   const credentials = getCredentials(formData);
   if (!credentials) {
     redirectWithMessage("メールアドレスとパスワードを入力してください");
+  }
+
+  if (!isSignupPasswordValid(credentials.password)) {
+    redirectWithMessage(SIGNUP_MESSAGES.invalid_credentials);
   }
 
   const supabase = await createClient();

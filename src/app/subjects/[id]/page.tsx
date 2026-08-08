@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { AttendanceSummaryCard } from "@/components/subjects/AttendanceSummaryCard";
 import { GradeGoalCard } from "@/components/subjects/GradeGoalCard";
 import { GradeItemsCard } from "@/components/subjects/GradeItemsCard";
+import { SubjectNextAction } from "@/components/subjects/SubjectNextAction";
 import { Card } from "@/components/ui/Card";
+import { AttendanceRiskBadge } from "@/components/ui/AttendanceRiskBadge";
 import { summarizeAttendanceRecords } from "@/lib/attendance/attendanceSummary";
 import { calcRemainingAbsences } from "@/lib/calc/attendance";
 import { calcRequiredScore } from "@/lib/calc/gradeGoal";
@@ -74,21 +76,38 @@ export default async function SubjectDetailPage({
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/subjects" className="text-sm underline">
-        ← 科目一覧に戻る
+    <div className="flex flex-col gap-5">
+      <Link className="text-sm font-semibold text-[#697067] hover:text-[#337a24]" href="/subjects">
+        科目一覧 / {subject.name}
       </Link>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{subject.name}</h1>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <Link href={`/subjects/${id}/edit`} className="underline">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-3xl font-bold">{subject.name}</h1>
+            <AttendanceRiskBadge riskLevel={attendanceCalcResult.riskLevel} />
+          </div>
+          <p className="mt-1 text-sm text-[#92988f]">
+            全{subject.totalClassCount ?? "?"}回 ・ 目標{subject.targetGradeLabel ?? "未設定"}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-sm font-semibold">
+          <Link
+            className="rounded-full border bg-white px-4 py-2.5 hover:bg-[#f1f2ee]"
+            href={`/subjects/${id}/edit`}
+          >
             評価方法を編集
           </Link>
-          <Link href={`/subjects/${id}/attendance`} className="underline">
+          <Link
+            className="rounded-full bg-[#72d350] px-4 py-2.5 hover:bg-[#64c544]"
+            href={`/subjects/${id}/attendance`}
+          >
             出席を記録
           </Link>
-          <Link href={`/subjects/${id}/tests`} className="underline">
+          <Link
+            className="rounded-full border bg-white px-4 py-2.5 hover:bg-[#f1f2ee]"
+            href={`/subjects/${id}/tests`}
+          >
             テスト・課題を記録
           </Link>
         </div>
@@ -96,7 +115,7 @@ export default async function SubjectDetailPage({
 
       {failedLabels.length === 0 ? null : <DataErrorNotice labels={failedLabels} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <AttendanceSummaryCard
           result={attendanceCalcResult}
           summary={attendanceSummary}
@@ -105,37 +124,44 @@ export default async function SubjectDetailPage({
         <GradeGoalCard result={gradeGoalResult} targetScore={subject.targetScore} />
       </div>
 
-      <GradeItemsCard gradeItemScores={gradeItemScores} />
+      <SubjectNextAction
+        attendance={attendanceCalcResult}
+        gradeGoal={gradeGoalResult}
+        subjectId={id}
+      />
 
-      <Card>
-        <h2 className="font-medium">出席条件</h2>
-        <dl className="mt-3 flex flex-col gap-1 text-sm text-gray-600">
-          <div className="flex justify-between">
-            <dt>必要出席率</dt>
-            <dd>
-              {subject.attendanceRequiredRate === null
-                ? "未設定"
-                : `${subject.attendanceRequiredRate}%`}
-            </dd>
-          </div>
-          <div className="flex justify-between">
-            <dt>最大欠席数</dt>
-            <dd>
-              {subject.attendanceMaxAbsences === null
-                ? "未設定"
-                : `${subject.attendanceMaxAbsences} 回`}
-            </dd>
-          </div>
-          <div className="flex justify-between">
-            <dt>出席を成績に含める</dt>
-            <dd>{subject.attendanceAffectsGrade ? "含める" : "含めない"}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt>目標成績</dt>
-            <dd>{subject.targetGradeLabel ?? "未設定"}</dd>
-          </div>
-        </dl>
-      </Card>
+      <div className="grid gap-4 xl:grid-cols-[1.65fr_1fr]">
+        <GradeItemsCard gradeItemScores={gradeItemScores} />
+        <Card>
+          <h2 className="font-display text-lg font-bold">出席条件・目標</h2>
+          <dl className="mt-4 flex flex-col gap-3 text-sm text-[#697067]">
+            <div className="flex justify-between">
+              <dt>必要出席率</dt>
+              <dd>
+                {subject.attendanceRequiredRate === null
+                  ? "未設定"
+                  : `${subject.attendanceRequiredRate}%`}
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>最大欠席数</dt>
+              <dd>
+                {subject.attendanceMaxAbsences === null
+                  ? "未設定"
+                  : `${subject.attendanceMaxAbsences} 回`}
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>出席を成績に含める</dt>
+              <dd>{subject.attendanceAffectsGrade ? "含める" : "含めない"}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt>目標成績</dt>
+              <dd>{subject.targetGradeLabel ?? "未設定"}</dd>
+            </div>
+          </dl>
+        </Card>
+      </div>
     </div>
   );
 }

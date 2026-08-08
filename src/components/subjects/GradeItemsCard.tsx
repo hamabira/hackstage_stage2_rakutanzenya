@@ -22,15 +22,15 @@ export function GradeItemsCard({ gradeItemScores }: GradeItemsCardProps) {
 
   return (
     <Card>
-      <h2 className="font-medium">評価項目</h2>
+      <h2 className="font-display text-lg font-bold">評価項目</h2>
 
       {gradeItemScores.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-500">評価項目が登録されていません。</p>
+        <p className="mt-3 text-sm text-[#697067]">評価項目が登録されていません。</p>
       ) : (
         <>
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-4 overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-gray-600">
+              <thead className="text-[#697067]">
                 <tr>
                   <th className="py-1 pr-4 font-medium">項目</th>
                   <th className="py-1 pr-4 font-medium">種類</th>
@@ -41,19 +41,19 @@ export function GradeItemsCard({ gradeItemScores }: GradeItemsCardProps) {
               <tbody>
                 {gradeItemScores.map(({ gradeItem, currentScore, recordCount }) => (
                   <tr key={gradeItem.id} className="border-t">
-                    <td className="py-2 pr-4">{gradeItem.name}</td>
-                    <td className="py-2 pr-4 text-gray-600">
+                    <td className="py-3 pr-4 font-semibold">{gradeItem.name}</td>
+                    <td className="py-3 pr-4 text-[#697067]">
                       {CATEGORY_LABELS[gradeItem.category]}
                     </td>
                     <td className="py-2 pr-4">{gradeItem.weight}%</td>
                     <td className="py-2">
                       {currentScore === null ? (
-                        <span className="text-gray-500">未記録</span>
+                        <span className="font-semibold text-[#d98a16]">未記録</span>
                       ) : (
                         <>
                           {currentScore} / {gradeItem.maxScore ?? "満点未設定"}
                           {recordCount > 1 ? (
-                            <span className="ml-1 text-gray-500">
+                            <span className="ml-1 text-[#697067]">
                               ({recordCount}件の平均)
                             </span>
                           ) : null}
@@ -66,7 +66,7 @@ export function GradeItemsCard({ gradeItemScores }: GradeItemsCardProps) {
             </table>
           </div>
 
-          <p className="mt-3 text-sm text-gray-600">
+          <p className="mt-4 text-sm text-[#697067]">
             評価割合の合計: {weightTotal}%
           </p>
         </>

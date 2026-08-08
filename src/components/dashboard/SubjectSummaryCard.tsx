@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { ATTENDANCE_RISK_PRESENTATION } from "@/lib/calc/attendanceMessages";
-import { GRADE_GOAL_PRESENTATION } from "@/lib/calc/gradeGoalMessages";
+import { AttendanceRiskBadge } from "@/components/ui/AttendanceRiskBadge";
 import type { SubjectSummary } from "@/lib/dashboard/subjectSummary";
 
 /** 残り欠席回数を一行で表す。計算できない場合は理由ではなく促し文を出す。 */
@@ -38,41 +37,42 @@ function getGradeGoalText(summary: SubjectSummary): string {
 
 /** ダッシュボードで科目ごとの逆算結果を要約するカード。 */
 export function SubjectSummaryCard({ summary }: { summary: SubjectSummary }) {
-  const risk = ATTENDANCE_RISK_PRESENTATION[summary.attendance.riskLevel];
-  const goal = GRADE_GOAL_PRESENTATION[summary.gradeGoal.status];
-
   return (
-    <Link href={`/subjects/${summary.subject.id}`}>
-      <Card className="h-full hover:border-gray-400">
+    <Link className="group block h-full" href={`/subjects/${summary.subject.id}`}>
+      <Card className="flex h-full min-h-64 flex-col p-5 group-hover:-translate-y-0.5 group-hover:border-[#c8ccc3] group-hover:shadow-md">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium">{summary.subject.name}</h3>
-          <span className={`shrink-0 text-sm font-medium ${risk.className}`}>
-            {risk.label}
-          </span>
+          <div>
+            <h3 className="font-display text-lg font-bold">{summary.subject.name}</h3>
+            <p className="mt-1 text-xs text-[#92988f]">
+              {summary.recordedCount} / {summary.subject.totalClassCount ?? "?"}回 記録済み
+            </p>
+          </div>
+          <AttendanceRiskBadge riskLevel={summary.attendance.riskLevel} />
         </div>
 
-        <dl className="mt-3 flex flex-col gap-2 text-sm">
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-gray-600">あと何回休めるか</dt>
-            <dd className={`font-medium ${risk.className}`}>
+        <dl className="mt-7 grid grid-cols-2 gap-4">
+          <div>
+            <dt className="text-xs text-[#697067]">あと何回休める？</dt>
+            <dd className="font-display mt-2 text-xl font-bold text-[#20231f]">
               {getAttendanceText(summary)}
             </dd>
           </div>
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-gray-600">あと何点必要か</dt>
-            <dd className={`font-medium ${goal.className}`}>
+          <div>
+            <dt className="text-xs text-[#697067]">目標まで</dt>
+            <dd className="font-display mt-2 text-lg font-bold text-[#20231f]">
               {getGradeGoalText(summary)}
             </dd>
           </div>
-          <div className="flex items-baseline justify-between gap-2">
-            <dt className="text-gray-600">現在の出席率</dt>
-            <dd>
-              {summary.attendance.currentAttendanceRate === null
-                ? "記録なし"
-                : `${summary.attendance.currentAttendanceRate}%`}
-            </dd>
-          </div>
         </dl>
+
+        <div className="mt-auto flex items-end justify-between gap-3 pt-7 text-xs">
+          <p className="text-[#92988f]">
+            出席率 {summary.attendance.currentAttendanceRate === null
+              ? "記録なし"
+              : `${summary.attendance.currentAttendanceRate}%`}
+          </p>
+          <span className="font-bold text-[#337a24]">詳しく見る →</span>
+        </div>
       </Card>
     </Link>
   );
