@@ -59,6 +59,10 @@ export type UpdateSubjectResult =
   | ({ ok: true; subjectId: string } & SubjectWithGradeItems)
   | { ok: false; error: SubjectQueryError };
 
+export type DeleteSubjectResult =
+  | { ok: true }
+  | { ok: false; error: SubjectQueryError };
+
 const SUBJECT_COLUMNS =
   "id, user_id, name, total_class_count, attendance_required_rate, attendance_max_absences, attendance_affects_grade, target_grade_label, target_score";
 const GRADE_ITEM_COLUMNS = "id, subject_id, name, category, weight, max_score, sort_order";
@@ -154,7 +158,7 @@ async function getAuthenticatedClient() {
     return { ok: false as const, error: "unauthenticated" as const };
   }
 
-  return { ok: true as const, supabase };
+  return { ok: true as const, supabase, userId: data.user.id };
 }
 
 /** 同じSupabaseクライアントで、本人の科目と評価項目を取得する。 */
@@ -278,4 +282,32 @@ export async function updateSubject(
     subject: subjectResult.subject,
     gradeItems: subjectResult.gradeItems,
   };
+}
+
+/**
+ * 自分が登録した科目を削除する。
+ * 評価項目・出席記録・点数記録は、外部キーの on delete cascade により同時に削除される。
+ */
+export async function deleteSubject(subjectId: string): Promise<DeleteSubjectResult> {
+  const authenticated = await getAuthenticatedClient();
+  if (!authenticated.ok) {
+    return authenticated;
+  }
+
+  const { data, error } = await authenticated.supabase
+    .from("subjects")
+    .delete()
+    .eq("id", subjectId)
+    .eq("user_id", authenticated.userId)
+    .select("id");
+
+  if (error) {
+    return { ok: false, error: toSubjectQueryError(error.code) };
+  }
+
+  if (!data || data.length === 0) {
+    return { ok: false, error: "not_found" };
+  }
+
+  return { ok: true };
 }
