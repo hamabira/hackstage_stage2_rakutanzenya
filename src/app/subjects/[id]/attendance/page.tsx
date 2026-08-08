@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+<<<<<<< HEAD
 import { getSubjectById } from "@/lib/supabase/queries/subjects";
 import { getAttendanceRecordsBySubjectId } from "@/lib/supabase/queries/attendanceRecords";
 import { upsertAttendanceRecord } from "@/app/actions/attendance";
@@ -20,6 +21,13 @@ const STATUS_STYLE: Record<string, string> = {
   late: "bg-yellow-50 text-yellow-700 border border-yellow-200",
   excused: "bg-blue-50 text-blue-700 border border-blue-200",
 };
+=======
+import { AttendanceManager } from "@/components/attendance/AttendanceManager";
+import { Card } from "@/components/ui/Card";
+import { summarizeAttendanceRecords } from "@/lib/attendance/attendanceSummary";
+import { getAttendanceRecords } from "@/lib/supabase/queries/attendance";
+import { getSubject } from "@/lib/supabase/queries/subjects";
+>>>>>>> ab9fe9b4726c838b8521d45986b3449ebab7357d
 
 export default async function SubjectAttendancePage({
   params,
@@ -28,6 +36,7 @@ export default async function SubjectAttendancePage({
 }) {
   const { id } = await params;
 
+<<<<<<< HEAD
   const [subject, records] = await Promise.all([
     getSubjectById(id),
     getAttendanceRecordsBySubjectId(id),
@@ -43,6 +52,18 @@ export default async function SubjectAttendancePage({
 
   // upsertAttendanceRecord(subjectId, prevState, formData) を bind で部分適用
   const boundUpsert = upsertAttendanceRecord.bind(null, id);
+=======
+  const subjectResult = await getSubject(id);
+
+  // 他ユーザーの科目はRLSにより not_found となるため、存在の有無を区別しない。
+  if (!subjectResult.ok) {
+    notFound();
+  }
+
+  const attendanceResult = await getAttendanceRecords(id);
+  const records = attendanceResult.ok ? attendanceResult.records : [];
+  const summary = summarizeAttendanceRecords(records);
+>>>>>>> ab9fe9b4726c838b8521d45986b3449ebab7357d
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -50,6 +71,7 @@ export default async function SubjectAttendancePage({
         ← {subject.name} の詳細に戻る
       </Link>
 
+<<<<<<< HEAD
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">出席の記録</h1>
         <div className="flex gap-4 text-sm text-gray-600">
@@ -106,6 +128,49 @@ export default async function SubjectAttendancePage({
           </table>
         </div>
       )}
+=======
+      <div>
+        <h1 className="text-xl font-semibold">出席の記録</h1>
+        <p className="mt-1 text-sm text-gray-600">{subjectResult.subject.name}</p>
+      </div>
+
+      {attendanceResult.ok ? null : (
+        <Card className="border-red-300 bg-red-50">
+          <p className="text-sm text-red-700" role="alert">
+            出席記録の取得に失敗しました。時間をおいて画面を再読み込みしてください。
+          </p>
+        </Card>
+      )}
+
+      <Card>
+        <dl className="flex flex-wrap gap-x-8 gap-y-1 text-sm text-gray-600">
+          <div className="flex gap-2">
+            <dt>出席</dt>
+            <dd>{summary.statusCounts.present} 回</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt>欠席</dt>
+            <dd>{summary.statusCounts.absent} 回</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt>遅刻</dt>
+            <dd>{summary.statusCounts.late} 回</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt>公欠</dt>
+            <dd>{summary.statusCounts.excused} 回</dd>
+          </div>
+          <div className="flex gap-2">
+            <dt>記録済み / 総授業回数</dt>
+            <dd>
+              {summary.recordedCount} / {subjectResult.subject.totalClassCount ?? "未設定"} 回
+            </dd>
+          </div>
+        </dl>
+      </Card>
+
+      <AttendanceManager records={records} subjectId={id} />
+>>>>>>> ab9fe9b4726c838b8521d45986b3449ebab7357d
     </div>
   );
 }

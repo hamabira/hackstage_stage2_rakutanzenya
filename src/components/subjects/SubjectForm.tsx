@@ -18,7 +18,10 @@ type SubjectFormAction = (formData: FormData) => void | Promise<void>;
 type InitialGradeItem = Pick<
   GradeItem,
   "name" | "category" | "weight" | "maxScore" | "sortOrder"
->;
+> & {
+  /** 保存済み評価項目のDB上のID。編集時に渡すと更新・削除の対象を特定できる。 */
+  id?: string;
+};
 
 interface SubjectFormProps {
   subject?: Subject;
@@ -62,6 +65,7 @@ function getInitialGradeItems(
     .sort((first, second) => first.sortOrder - second.sortOrder)
     .map((item, index) => ({
       id: `grade-item-${index}`,
+      persistedId: item.id,
       name: item.name,
       category: item.category,
       weight: String(item.weight),
@@ -415,11 +419,22 @@ export function SubjectForm({
                   </div>
                 </div>
 
+<<<<<<< HEAD
                 <input
                   name={`gradeItems[${index}][sortOrder]`}
                   type="hidden"
                   value={index}
                 />
+=======
+                <input name={`gradeItems[${index}][sortOrder]`} type="hidden" value={index} />
+                {item.persistedId === undefined ? null : (
+                  <input
+                    name={`gradeItems[${index}][id]`}
+                    type="hidden"
+                    value={item.persistedId}
+                  />
+                )}
+>>>>>>> ab9fe9b4726c838b8521d45986b3449ebab7357d
 
                 <label
                   className="flex flex-col gap-1 text-sm"
