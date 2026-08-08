@@ -92,7 +92,8 @@ export function validateSubjectForm(values: SubjectFormValues): SubjectFormError
     values.attendanceMaxAbsences.trim() !== "" &&
     !isIntegerInRange(values.attendanceMaxAbsences, 0, totalClassCount)
   ) {
-    errors.attendanceMaxAbsences = "最大欠席数は0以上かつ総授業回数以下の整数で入力してください。";
+    errors.attendanceMaxAbsences =
+      "最大欠席数は0以上かつ総授業回数以下の整数で入力してください。";
   }
 
   if (
@@ -118,7 +119,8 @@ export function validateSubjectForm(values: SubjectFormValues): SubjectFormError
     }
 
     if (!isNumberInRange(item.maxScore, 0.01, MAX_SCORE)) {
-      errors[`${fieldPrefix}.maxScore`] = `満点は0.01〜${MAX_SCORE}で入力してください。`;
+      errors[`${fieldPrefix}.maxScore`] =
+        `満点は0.01〜${MAX_SCORE}で入力してください。`;
     }
   });
 

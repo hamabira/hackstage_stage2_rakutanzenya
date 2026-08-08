@@ -1,107 +1,76 @@
 import Link from "next/link";
-import { getSubjects } from "@/lib/supabase/queries/subjects";
-import { getGradeItemsGroupedBySubject } from "@/lib/supabase/queries/gradeItems";
-import { getAttendanceSummariesBySubjectIds } from "@/lib/supabase/queries/attendanceRecords";
-import { getLatestTestRecordsByGradeItemIds } from "@/lib/supabase/queries/testRecords";
-import { calcRemainingAbsences } from "@/lib/calc/attendance";
-import { calcRequiredScore } from "@/lib/calc/gradeGoal";
-import type { AttendanceCalcResult } from "@/lib/calc/attendance";
-import type { GradeGoalResult } from "@/lib/calc/gradeGoal";
-import { SubjectsTable } from "@/components/subjects/SubjectsTable";
+import { getSubjectDashboardData } from "@/lib/supabase/queries/subjectDashboard";
+import { SubjectSummaryCard } from "@/components/dashboard/SubjectSummaryCard";
 
 export default async function DashboardPage() {
-  const subjects = await getSubjects();
+  const { subjects, gradeItemsMap, attendanceResults, gradeResults } =
+    await getSubjectDashboardData();
 
-  if (subjects.length === 0) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">ダッシュボード</h1>
-          <Link href="/subjects/new" className="text-sm underline">
-            科目を追加
-          </Link>
-        </div>
-        <p className="text-sm text-gray-500">
-          登録済みの科目はまだありません。
-        </p>
-      </div>
-    );
-  }
-
-  const subjectIds = subjects.map((s) => s.id);
-
-  // 並列でデータを取得
-  const [gradeItemsMap, attendanceSummaries] = await Promise.all([
-    getGradeItemsGroupedBySubject(subjectIds),
-    getAttendanceSummariesBySubjectIds(subjectIds),
-  ]);
-
-  // 全 grade_item の id を収集して test_records を一括取得
-  const allGradeItemIds = Object.values(gradeItemsMap).flatMap((items) =>
-    items.map((item) => item.id),
-  );
-  const latestTestRecords =
-    await getLatestTestRecordsByGradeItemIds(allGradeItemIds);
-
-  // 科目ごとに計算結果を作成
-  const attendanceResults: Record<string, AttendanceCalcResult | null> = {};
-  const gradeResults: Record<string, GradeGoalResult | null> = {};
-
-  for (const subject of subjects) {
-    const gradeItems = gradeItemsMap[subject.id] ?? [];
-
-    // 出席逆算
-    if (
-      subject.attendanceAffectsGrade &&
-      subject.totalClassCount != null &&
-      subject.totalClassCount > 0
-    ) {
-      const summary = attendanceSummaries[subject.id];
-      const attendedCount =
-        (summary?.presentCount ?? 0) + (summary?.lateCount ?? 0);
-      const absentCount = summary?.absentCount ?? 0;
-
-      attendanceResults[subject.id] = calcRemainingAbsences({
-        totalClassCount: subject.totalClassCount,
-        attendedCount,
-        absentCount,
-        requiredRate: subject.attendanceRequiredRate,
-        maxAbsences: subject.attendanceMaxAbsences,
-      });
-    } else {
-      attendanceResults[subject.id] = null;
-    }
-
-    // 成績逆算
-    if (subject.targetScore != null && gradeItems.length > 0) {
-      gradeResults[subject.id] = calcRequiredScore({
-        targetScore: subject.targetScore,
-        gradeItems: gradeItems.map((item) => ({
-          weight: item.weight,
-          maxScore: item.maxScore,
-          currentScore: latestTestRecords[item.id]?.score ?? null,
-        })),
-      });
-    } else {
-      gradeResults[subject.id] = null;
-    }
-  }
+  // 注意が必要な科目数（isAtRisk または達成困難）
+  const alertCount = subjects.filter((s) => {
+    const att = attendanceResults[s.id];
+    const grd = gradeResults[s.id];
+    return (att?.isAtRisk ?? false) || (grd !== null && grd !== undefined && !grd.isAchievable);
+  }).length;
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">ダッシュボード</h1>
-        <Link href="/subjects/new" className="text-sm underline">
+        <Link
+          href="/subjects/new"
+          className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white"
+        >
           科目を追加
         </Link>
       </div>
 
-      <SubjectsTable
-        subjects={subjects}
-        gradeItemsMap={gradeItemsMap}
-        attendanceResults={attendanceResults}
-        gradeResults={gradeResults}
-      />
+      {/* 注意バナー */}
+      {alertCount > 0 && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
+        >
+          <span aria-hidden="true" className="text-base">⚠</span>
+          <span>
+            <strong>{alertCount} 科目</strong>で注意が必要な状況です
+          </span>
+        </div>
+      )}
+
+      {/* 科目なし */}
+      {subjects.length === 0 && (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-8 py-12 text-center">
+          <p className="text-base font-medium text-gray-700">
+            まだ科目が登録されていません
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            科目を追加すると、出席状況と成績の目標達成状況をここで確認できます。
+          </p>
+          <Link
+            href="/subjects/new"
+            className="mt-4 inline-block rounded-md bg-black px-4 py-2 text-sm font-medium text-white"
+          >
+            最初の科目を追加する
+          </Link>
+        </div>
+      )}
+
+      {/* カードグリッド */}
+      {subjects.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((subject) => (
+            <SubjectSummaryCard
+              key={subject.id}
+              subject={subject}
+              gradeItems={gradeItemsMap[subject.id] ?? []}
+              attendanceResult={attendanceResults[subject.id] ?? null}
+              gradeResult={gradeResults[subject.id] ?? null}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

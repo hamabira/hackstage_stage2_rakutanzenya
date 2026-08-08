@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { SubjectForm } from "@/components/subjects/SubjectForm";
+import { notFound } from "next/navigation";
+import { getSubjectById } from "@/lib/supabase/queries/subjects";
+import { getGradeItemsBySubjectId } from "@/lib/supabase/queries/gradeItems";
+import { updateSubject } from "@/app/actions/subjects";
+import { SubjectFormWrapper } from "@/components/subjects/SubjectFormWrapper";
 
-// TODO: Supabaseからの科目データ取得は後続issueで行う(評価方法編集UI実装issue)
 export default async function EditSubjectPage({
   params,
 }: {
@@ -9,13 +12,29 @@ export default async function EditSubjectPage({
 }) {
   const { id } = await params;
 
+  const [subject, gradeItems] = await Promise.all([
+    getSubjectById(id),
+    getGradeItemsBySubjectId(id),
+  ]);
+
+  if (!subject) {
+    notFound();
+  }
+
+  // updateSubject(subjectId, prevState, formData) を bind で部分適用する
+  const boundUpdateSubject = updateSubject.bind(null, id);
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-2xl">
       <Link href={`/subjects/${id}`} className="text-sm underline">
         ← 科目詳細に戻る
       </Link>
-      <h1 className="text-xl font-semibold">評価方法を編集</h1>
-      <SubjectForm />
+      <h1 className="text-xl font-semibold">{subject.name} を編集</h1>
+      <SubjectFormWrapper
+        action={boundUpdateSubject}
+        subject={subject}
+        gradeItems={gradeItems}
+      />
     </div>
   );
 }
