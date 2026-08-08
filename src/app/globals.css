@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f6f2;
+  --foreground: #20231f;
+  --surface: #ffffff;
+  --surface-muted: #f0f4e8;
+  --muted: #697067;
+  --subtle: #92988f;
+  --border: #e2e4de;
+  --accent: #72d350;
+  --accent-dark: #337a24;
+  --warning: #d98a16;
+  --danger: #c44a42;
+  --safe: #2f7d4e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-funnel-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "Noto Sans JP", sans-serif;
+}
+
+button,
+a {
+  transition-duration: 160ms;
+  transition-property: background-color, border-color, color, opacity, transform;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: #c8ccc3;
+}
+
+.font-display {
+  font-family: var(--font-funnel-sans), var(--font-geist-sans), sans-serif;
 }

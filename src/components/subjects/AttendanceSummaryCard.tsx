@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { AttendanceRiskBadge } from "@/components/ui/AttendanceRiskBadge";
 import type { AttendanceCalcResult } from "@/lib/calc/attendance";
 import {
   ATTENDANCE_CALCULATION_ERROR_MESSAGES,
@@ -19,29 +20,30 @@ export function AttendanceSummaryCard({
   totalClassCount,
 }: AttendanceSummaryCardProps) {
   const risk = ATTENDANCE_RISK_PRESENTATION[result.riskLevel];
+  const isUrgent = ["caution", "danger", "exceeded"].includes(result.riskLevel);
 
   return (
-    <Card>
+    <Card className={isUrgent ? "border-[#f3d6a0] bg-[#fff8ea]" : ""}>
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">あと何回休めるか</h2>
-        <span className={`text-sm font-medium ${risk.className}`}>{risk.label}</span>
+        <h2 className="text-sm font-bold text-[#5e655b]">あと何回休める？</h2>
+        <AttendanceRiskBadge riskLevel={result.riskLevel} />
       </div>
 
       {result.remainingAllowedAbsences === null ? (
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-5 text-sm text-[#697067]">
           {result.calculationError === null
             ? "計算できませんでした。"
             : ATTENDANCE_CALCULATION_ERROR_MESSAGES[result.calculationError]}
         </p>
       ) : (
-        <p className={`mt-2 text-3xl font-semibold ${risk.className}`}>
+        <p className={`font-display mt-6 text-4xl font-bold ${risk.className}`}>
           {result.remainingAllowedAbsences < 0
             ? `${Math.abs(result.remainingAllowedAbsences)}回 超過`
             : `あと ${result.remainingAllowedAbsences} 回`}
         </p>
       )}
 
-      <dl className="mt-4 flex flex-col gap-1 text-sm text-gray-600">
+      <dl className="mt-8 flex flex-col gap-2 text-sm text-[#697067]">
         <div className="flex justify-between">
           <dt>現在の出席率</dt>
           <dd>

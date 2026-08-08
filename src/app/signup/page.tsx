@@ -1,4 +1,5 @@
 import { AuthPage } from "@/components/auth/AuthPage";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/credentials";
 import { signup } from "./actions";
 
 export default async function SignupPage({
@@ -17,7 +18,7 @@ export default async function SignupPage({
         label: "ログイン",
       }}
       error={error}
-      passwordMinLength={6}
+      passwordMinLength={MIN_PASSWORD_LENGTH}
       submitLabel="登録する"
       title="新規登録"
     />

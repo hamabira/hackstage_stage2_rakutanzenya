@@ -44,13 +44,13 @@ export default async function SubjectTestsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href={`/subjects/${id}`} className="text-sm underline">
-        ← 科目詳細に戻る
+      <Link className="text-sm font-semibold text-[#697067] hover:text-[#337a24]" href={`/subjects/${id}`}>
+        {subjectResult.subject.name} / テスト・課題記録
       </Link>
 
       <div>
-        <h1 className="text-xl font-semibold">テスト・課題の記録</h1>
-        <p className="mt-1 text-sm text-gray-600">{subjectResult.subject.name}</p>
+        <h1 className="font-display text-3xl font-bold">テスト・課題の記録</h1>
+        <p className="mt-1 text-sm text-[#697067]">{subjectResult.subject.name}</p>
       </div>
 
       {testRecordsResult.ok ? null : (

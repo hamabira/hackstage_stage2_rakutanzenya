@@ -38,9 +38,9 @@ const CATEGORY_OPTIONS: Array<{ value: GradeItemCategory; label: string }> = [
   { value: "other", label: "その他" },
 ];
 
-const inputClassName = "rounded-md border px-3 py-2";
+const inputClassName = "min-h-11 px-3 py-2";
 const errorClassName = "text-sm text-red-700";
-const actionButtonClassName = "hover:bg-gray-800 disabled:bg-black disabled:text-white";
+const actionButtonClassName = "disabled:bg-[#eff0ec] disabled:text-[#92988f]";
 
 /** 新しく追加する評価項目の初期値を作成する。 */
 function createGradeItem(id: string): SubjectFormGradeItemValue {
@@ -196,9 +196,9 @@ export function SubjectForm({
   }
 
   return (
-    <form action={action} className="flex flex-col gap-8" noValidate onSubmit={handleSubmit}>
-      <fieldset className="flex flex-col gap-4">
-        <legend className="font-medium">科目情報</legend>
+    <form action={action} className="flex max-w-4xl flex-col gap-6" noValidate onSubmit={handleSubmit}>
+      <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
+        <legend className="font-display px-1 text-lg font-bold">科目情報</legend>
 
         <label className="flex flex-col gap-1 text-sm" htmlFor="subject-name">
           科目名
@@ -235,8 +235,8 @@ export function SubjectForm({
         <FieldError error={errors.totalClassCount} fieldName="totalClassCount" />
       </fieldset>
 
-      <fieldset className="flex flex-col gap-4">
-        <legend className="font-medium">出席条件</legend>
+      <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
+        <legend className="font-display px-1 text-lg font-bold">出席条件</legend>
 
         <label className="flex flex-col gap-1 text-sm" htmlFor="attendance-required-rate">
           必要出席率（%）
@@ -287,8 +287,8 @@ export function SubjectForm({
         </label>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-4">
-        <legend className="font-medium">目標成績</legend>
+      <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
+        <legend className="font-display px-1 text-lg font-bold">目標成績</legend>
 
         <label className="flex flex-col gap-1 text-sm" htmlFor="target-grade-label">
           目標成績の表示名
@@ -322,8 +322,8 @@ export function SubjectForm({
         <FieldError error={errors.targetScore} fieldName="targetScore" />
       </fieldset>
 
-      <fieldset className="flex flex-col gap-4">
-        <legend className="font-medium">評価項目</legend>
+      <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
+        <legend className="font-display px-1 text-lg font-bold">評価項目</legend>
         <p aria-live="polite" className={isWeightTotalValid ? "text-sm text-green-700" : "text-sm text-red-700"}>
           評価割合の合計: {weightTotal.toFixed(2)}%{isWeightTotalValid ? "（設定完了）" : "（100%にしてください）"}
         </p>
@@ -337,7 +337,7 @@ export function SubjectForm({
             const itemPrefix = `grade-item-${index}`;
 
             return (
-              <div className="flex flex-col gap-3 rounded-md border p-4" key={item.id}>
+              <div className="flex flex-col gap-3 rounded-lg border bg-[#fafaf7] p-4" key={item.id}>
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-medium">評価項目 {index + 1}</h3>
                   <div aria-label={`評価項目 ${index + 1} の操作`} className="flex flex-wrap gap-2" role="group">
@@ -346,7 +346,7 @@ export function SubjectForm({
                       className={actionButtonClassName}
                       onClick={() => moveGradeItem(index, "up")}
                       type="button"
-                      variant="primary"
+                      variant="secondary"
                     >
                       上へ
                     </Button>
@@ -355,7 +355,7 @@ export function SubjectForm({
                       className={actionButtonClassName}
                       onClick={() => moveGradeItem(index, "down")}
                       type="button"
-                      variant="primary"
+                      variant="secondary"
                     >
                       下へ
                     </Button>
@@ -363,7 +363,7 @@ export function SubjectForm({
                       className={actionButtonClassName}
                       onClick={() => removeGradeItem(item.id)}
                       type="button"
-                      variant="primary"
+                      variant="secondary"
                     >
                       削除
                     </Button>
@@ -458,7 +458,7 @@ export function SubjectForm({
           className={actionButtonClassName}
           onClick={addGradeItem}
           type="button"
-          variant="primary"
+          variant="secondary"
         >
           評価項目を追加
         </Button>
