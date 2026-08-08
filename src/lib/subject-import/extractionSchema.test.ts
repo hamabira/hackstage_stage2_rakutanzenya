@@ -142,6 +142,15 @@ describe("EXTRACTION_RESPONSE_SCHEMA", () => {
     }
   });
 
+  it("maxItemsを含まない", () => {
+    // 実APIでは maxItems を含むと INVALID_ARGUMENT(400) になる。
+    // 件数の上限は isExtractedSubjectDraft 側で確認する。
+    const keys = collectKeys(EXTRACTION_RESPONSE_SCHEMA, new Set<string>());
+
+    expect(keys.has("maxItems")).toBe(false);
+    expect(keys.has("minItems")).toBe(false);
+  });
+
   it("トップレベルの必須項目がすべて宣言されている", () => {
     expect(EXTRACTION_RESPONSE_SCHEMA.required).toEqual([
       "subjectName",

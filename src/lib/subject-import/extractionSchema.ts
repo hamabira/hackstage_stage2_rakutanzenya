@@ -64,8 +64,9 @@ export const EXTRACTION_RESPONSE_SCHEMA = {
     ),
     gradeItems: {
       type: "ARRAY",
-      description: "評価項目。入力文に現れる順に並べる。",
-      maxItems: MAX_GRADE_ITEMS,
+      // maxItems はこのAPIが400を返すため指定しない。件数の上限は
+      // isExtractedSubjectDraft がMAX_GRADE_ITEMSで確認する。
+      description: `評価項目。入力文に現れる順に並べる。最大${MAX_GRADE_ITEMS}件。`,
       items: {
         type: "OBJECT",
         properties: {
@@ -90,7 +91,8 @@ export const EXTRACTION_RESPONSE_SCHEMA = {
     },
     detectedSubjectCount: {
       type: "INTEGER",
-      description: "入力文に含まれる科目の数。1科目だけなら1。",
+      description:
+        "入力文に含まれる科目の数。科目名が複数あり、それぞれに独立した授業回数や評価構成が書かれていれば2以上にする。1科目内の中間・期末などは評価項目であって科目ではない。",
     },
   },
   required: [
