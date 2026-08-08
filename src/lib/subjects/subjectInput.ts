@@ -20,6 +20,16 @@ export interface CreateSubjectInput {
   gradeItems: CreateGradeItemInput[];
 }
 
+/** 編集時は、既に保存済みの評価項目だけIDを持つ。 */
+export interface UpdateGradeItemInput extends CreateGradeItemInput {
+  id?: string;
+}
+
+export interface UpdateSubjectInput
+  extends Omit<CreateSubjectInput, "gradeItems"> {
+  gradeItems: UpdateGradeItemInput[];
+}
+
 /** 空欄は「未設定」としてNULLで保存する。 */
 function toNullableNumber(value: string): number | null {
   return value.trim() === "" ? null : Number(value);
