@@ -38,12 +38,31 @@ npm install
 ### 2. Supabaseプロジェクトの準備
 
 1. [Supabase](https://supabase.com/dashboard) で新規プロジェクトを作成(チームで1つ共有する運用を想定)
-2. `supabase/migrations/` 配下のSQLを**ファイル名の番号順に**SupabaseダッシュボードのSQL Editorで実行する
-   - `0001_init.sql`: テーブル・RLSポリシーを作成
-   - `0002_add_data_integrity_constraints.sql`: 数値範囲・出席記録の重複を防ぐ制約を追加
-3. プロジェクトの Settings > API から `Project URL` と `anon public key` を取得
+2. [Supabase CLI](https://supabase.com/docs/guides/cli) をインストールし、プロジェクトへ接続する
 
-> **既に `0001_init.sql` だけを適用済みの環境に後から `0002` を足す場合**、既存データが制約に違反しているとALTER TABLEが失敗します。事前確認SQLと違反データの直し方を [docs/データ整合性ルール.md](docs/データ整合性ルール.md) にまとめてあるので、そちらの手順に従ってください。
+   ```bash
+   supabase login
+   supabase link --project-ref <プロジェクトのRef>
+   ```
+
+3. `supabase/migrations/` 配下のマイグレーションを適用する
+
+   ```bash
+   supabase migration list   # Local / Remote の適用状況を確認
+   supabase db push          # 未適用のものだけが実行される
+   ```
+
+4. プロジェクトの Settings > API から `Project URL` と `anon public key` を取得
+
+`db push` はどこまで適用済みかをリモートの履歴テーブルで管理するため、**何度実行しても既に適用されたマイグレーションは再実行されません**。新しいマイグレーションを追加したときも同じコマンドだけで済みます。
+
+> **既存データがある環境へ制約を追加する場合**、データが制約に違反しているとALTER TABLEが失敗します(トランザクションなので中途半端には適用されません)。事前確認SQLと違反データの直し方は [docs/データ整合性ルール.md](docs/データ整合性ルール.md) を参照してください。
+
+#### CLIを使わない場合(代替手順)
+
+SupabaseダッシュボードのSQL Editorへ、`supabase/migrations/` 配下のSQLを**ファイル名の番号順に**貼り付けて実行することもできます。
+
+ただしこの方法ではCLIの履歴テーブルに記録が残らないため、後から `supabase db push` へ切り替えると適用済みのマイグレーションを再実行しようとして失敗します。CLIとSQL Editorのどちらで運用するかは、チーム内で統一してください。
 
 ### 3. 環境変数の設定
 
