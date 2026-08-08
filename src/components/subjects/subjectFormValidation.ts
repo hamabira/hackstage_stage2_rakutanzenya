@@ -5,7 +5,10 @@ const WEIGHT_TOTAL = 100;
 const WEIGHT_TOLERANCE = 0.000001;
 
 export interface SubjectFormGradeItemValue {
+  /** フォーム内で行を識別するためのキー。DBのIDではない。 */
   id: string;
+  /** 保存済み評価項目のDB上のID。新規追加の行では未設定。 */
+  persistedId?: string;
   name: string;
   category: GradeItemCategory;
   weight: string;
