@@ -305,41 +305,6 @@ export function SubjectForm({
       </fieldset>
 
       <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
-        <legend className="font-display px-1 text-lg font-bold">目標成績</legend>
-
-        <label className="flex flex-col gap-1 text-sm" htmlFor="target-grade-label">
-          目標成績の表示名
-          <input
-            className={inputClassName}
-            id="target-grade-label"
-            name="targetGradeLabel"
-            onChange={(event) => updateValue("targetGradeLabel", event.target.value)}
-            placeholder="例: 目標成績"
-            type="text"
-            value={values.targetGradeLabel}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm" htmlFor="target-score">
-          目標点数
-          <input
-            aria-describedby={errors.targetScore ? getErrorId("targetScore") : undefined}
-            aria-invalid={Boolean(errors.targetScore)}
-            className={inputClassName}
-            id="target-score"
-            max="100"
-            min="0"
-            name="targetScore"
-            onChange={(event) => updateValue("targetScore", event.target.value)}
-            step="0.01"
-            type="number"
-            value={values.targetScore}
-          />
-        </label>
-        <FieldError error={errors.targetScore} fieldName="targetScore" />
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
         <legend className="font-display px-1 text-lg font-bold">評価項目</legend>
         <p aria-live="polite" className={isWeightTotalValid ? "text-sm text-green-700" : "text-sm text-red-700"}>
           評価割合の合計: {weightTotal.toFixed(2)}%{isWeightTotalValid ? "（設定完了）" : "（100%にしてください）"}
@@ -479,6 +444,41 @@ export function SubjectForm({
         >
           評価項目を追加
         </Button>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6">
+        <legend className="font-display px-1 text-lg font-bold">単位取得ライン</legend>
+
+        <label className="flex flex-col gap-1 text-sm" htmlFor="target-grade-label">
+          表示名
+          <input
+            className={inputClassName}
+            id="target-grade-label"
+            name="targetGradeLabel"
+            onChange={(event) => updateValue("targetGradeLabel", event.target.value)}
+            placeholder="例: 目標成績"
+            type="text"
+            value={values.targetGradeLabel}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm" htmlFor="target-score">
+          取得に必要な点数
+          <input
+            aria-describedby={errors.targetScore ? getErrorId("targetScore") : undefined}
+            aria-invalid={Boolean(errors.targetScore)}
+            className={inputClassName}
+            id="target-score"
+            max="100"
+            min="0"
+            name="targetScore"
+            onChange={(event) => updateValue("targetScore", event.target.value)}
+            step="0.01"
+            type="number"
+            value={values.targetScore}
+          />
+        </label>
+        <FieldError error={errors.targetScore} fieldName="targetScore" />
       </fieldset>
 
       <Button className={actionButtonClassName} disabled={pending} type="submit">
