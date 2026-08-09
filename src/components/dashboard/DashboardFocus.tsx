@@ -14,6 +14,10 @@ function requiresAction(summary: SubjectSummary): boolean {
 function getActionDetail(summary: SubjectSummary): string {
   const remaining = summary.attendance.remainingAllowedAbsences;
 
+  if (summary.gradeGoal.unachievableReason === "attendance_exceeded") {
+    return "出席条件を満たせないため、目標達成は不可能です";
+  }
+
   if (remaining !== null && remaining <= 1) {
     return remaining < 0
       ? `欠席上限を${Math.abs(remaining)}回超過しています`

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { AttendanceCalcResult } from "@/lib/calc/attendance";
-import type { GradeGoalResult } from "@/lib/calc/gradeGoal";
+import type { CourseGoalResult } from "@/lib/calc/courseGoal";
 
 interface SubjectNextActionProps {
   attendance: AttendanceCalcResult;
-  gradeGoal: GradeGoalResult;
+  gradeGoal: CourseGoalResult;
   subjectId: string;
 }
 
@@ -17,7 +17,13 @@ export function SubjectNextAction({
   const remaining = attendance.remainingAllowedAbsences;
 
   const action =
-    remaining !== null && remaining <= 1
+    gradeGoal.unachievableReason === "attendance_exceeded"
+      ? {
+          description: "出席記録と履修条件を確認する",
+          href: `/subjects/${subjectId}/attendance`,
+          label: "出席を確認",
+        }
+      : remaining !== null && remaining <= 1
       ? {
           description: "直近の授業の出席状況を記録する",
           href: `/subjects/${subjectId}/attendance`,

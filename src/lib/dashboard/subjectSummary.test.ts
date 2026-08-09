@@ -95,6 +95,33 @@ describe("buildSubjectSummaries", () => {
     expect(summaries[0].gradeGoal.status).toBe("achieved");
   });
 
+  it("欠席上限を超過した科目は、点数目標が達成済みでも達成不可能にする", () => {
+    const testRecord: TestRecord = {
+      id: "record-1",
+      gradeItemId: "item-1",
+      score: 90,
+      recordedAt: "2026-04-10",
+      memo: null,
+    };
+
+    const summaries = buildSubjectSummaries(
+      [buildSubject({ targetScore: 80, attendanceMaxAbsences: 3 })],
+      [buildGradeItem()],
+      [
+        buildAbsence("subject-1", 1),
+        buildAbsence("subject-1", 2),
+        buildAbsence("subject-1", 3),
+        buildAbsence("subject-1", 4),
+      ],
+      [testRecord],
+    );
+
+    expect(summaries[0].gradeGoal).toMatchObject({
+      status: "unachievable",
+      unachievableReason: "attendance_exceeded",
+    });
+  });
+
   it("計算不能な科目があっても他の科目の計算は成立する", () => {
     const summaries = buildSubjectSummaries(
       [

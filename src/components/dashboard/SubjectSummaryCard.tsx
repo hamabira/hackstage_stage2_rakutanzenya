@@ -39,14 +39,16 @@ function getAttendanceText(summary: SubjectSummary): string {
 
 /** 目標までの状況を一行で表す。 */
 function getGradeGoalText(summary: SubjectSummary): string {
-  const { status, requiredAverageOnRemaining } = summary.gradeGoal;
+  const { status, requiredAverageOnRemaining, unachievableReason } = summary.gradeGoal;
 
   if (status === "achieved") {
     return "目標達成済み";
   }
 
   if (status === "unachievable") {
-    return "目標達成は不可能";
+    return unachievableReason === "attendance_exceeded"
+      ? "出席条件により達成不可能"
+      : "目標達成は不可能";
   }
 
   if (requiredAverageOnRemaining === null) {

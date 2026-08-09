@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { AttendanceRiskBadge } from "@/components/ui/AttendanceRiskBadge";
 import { summarizeAttendanceRecords } from "@/lib/attendance/attendanceSummary";
 import { calcRemainingAbsences } from "@/lib/calc/attendance";
+import { calcCourseGoal } from "@/lib/calc/courseGoal";
 import { calcRequiredScore } from "@/lib/calc/gradeGoal";
 import {
   summarizeGradeItemScores,
@@ -70,9 +71,12 @@ export default async function SubjectDetailPage({
   });
 
   const gradeItemScores = summarizeGradeItemScores(gradeItems, testRecords);
-  const gradeGoalResult = calcRequiredScore({
-    gradeItems: toGradeGoalItems(gradeItemScores),
-    targetScore: subject.targetScore,
+  const gradeGoalResult = calcCourseGoal({
+    attendance: attendanceCalcResult,
+    gradeGoal: calcRequiredScore({
+      gradeItems: toGradeGoalItems(gradeItemScores),
+      targetScore: subject.targetScore,
+    }),
   });
 
   return (
