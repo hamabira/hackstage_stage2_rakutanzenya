@@ -103,9 +103,9 @@ describe("extractSubjectAction", () => {
     });
 
     it("上限を超える入力ならAIを呼ばない", async () => {
-      const result = await extractSubjectAction("あ".repeat(20_001));
+      const result = await extractSubjectAction("あ".repeat(2_001));
 
-      expect(result).toEqual({ ok: false, message: "入力は20,000文字以内にしてください。" });
+      expect(result).toEqual({ ok: false, message: "入力は2,000文字以内にしてください。" });
       expect(extractSubject).not.toHaveBeenCalled();
     });
 

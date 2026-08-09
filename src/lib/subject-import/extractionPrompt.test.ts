@@ -74,7 +74,7 @@ describe("EXTRACTION_SYSTEM_INSTRUCTION", () => {
 });
 
 describe("MAX_INPUT_LENGTH", () => {
-  it("issueの上限である20,000文字である", () => {
-    expect(MAX_INPUT_LENGTH).toBe(20_000);
+  it("Geminiへ送る上限である2,000文字である", () => {
+    expect(MAX_INPUT_LENGTH).toBe(2_000);
   });
 });

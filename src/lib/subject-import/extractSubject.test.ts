@@ -30,8 +30,13 @@ function geminiResponse(text: string, finishReason = "STOP") {
   } as unknown as Response;
 }
 
-function errorResponse(status: number) {
-  return { ok: false, status, json: async () => ({}) } as unknown as Response;
+function errorResponse(status: number, retryAfter?: string) {
+  return {
+    ok: false,
+    status,
+    headers: new Headers(retryAfter === undefined ? undefined : { "retry-after": retryAfter }),
+    json: async () => ({}),
+  } as unknown as Response;
 }
 
 const ORIGINAL_MODEL = process.env.GEMINI_MODEL;
@@ -188,8 +193,31 @@ describe("extractSubject", () => {
       expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
 
-    it("HTTP 429なら provider_error を返し再試行しない", async () => {
-      const fetchImpl = vi.fn().mockResolvedValue(errorResponse(429));
+    it("HTTP 429なら一度だけ再試行してから provider_error を返す", async () => {
+      // Retry-After: 0 で、待機を挟みつつ即時再試行できることを確認する。
+      const fetchImpl = vi.fn().mockResolvedValue(errorResponse(429, "0"));
+
+      const result = await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
+
+      expect(result).toEqual({ ok: false, error: "provider_error" });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it("HTTP 500なら再試行し、回復すれば成功する", async () => {
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValueOnce(geminiResponse(JSON.stringify(VALID_DRAFT)));
+
+      const result = await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
+
+      expect(result.ok).toBe(true);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it("HTTP 404（モデルID誤り）は再試行せず provider_error を返す", async () => {
+      // 認証やモデル名の誤りは繰り返しても直らない。
+      const fetchImpl = vi.fn().mockResolvedValue(errorResponse(404));
 
       const result = await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
 
@@ -197,20 +225,46 @@ describe("extractSubject", () => {
       expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
 
-    it("HTTP 404（モデルID誤り）でも provider_error を返す", async () => {
-      const fetchImpl = vi.fn().mockResolvedValue(errorResponse(404));
+    it("HTTP 401（キー誤り）も再試行しない", async () => {
+      const fetchImpl = vi.fn().mockResolvedValue(errorResponse(401));
 
       const result = await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
 
       expect(result).toEqual({ ok: false, error: "provider_error" });
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
 
-    it("ネットワークエラーなら provider_error を返す", async () => {
+    it("一時的な通信エラーなら再試行し、回復すれば成功する", async () => {
+      const fetchImpl = vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError("fetch failed"))
+        .mockResolvedValueOnce(geminiResponse(JSON.stringify(VALID_DRAFT)));
+
+      const result = await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
+
+      expect(result.ok).toBe(true);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it("2回とも通信エラーなら provider_error を返す", async () => {
+      // スキーマ不正ではないため invalid_response ではなく provider_error を返す。
       const fetchImpl = vi.fn().mockRejectedValue(new TypeError("network failure"));
 
       const result = await extractSubject("入力", { fetchImpl, apiKey: "test-key" });
 
       expect(result).toEqual({ ok: false, error: "provider_error" });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+
+    it("通信エラーの例外メッセージをログへ出さない", async () => {
+      const fetchImpl = vi.fn().mockRejectedValue(new Error("秘密のシラバス本文"));
+      const errorSpy = vi.spyOn(console, "error");
+
+      await extractSubject("秘密のシラバス本文", { fetchImpl, apiKey: "test-key" });
+
+      for (const call of errorSpy.mock.calls) {
+        expect(JSON.stringify(call)).not.toContain("秘密のシラバス本文");
+      }
     });
 
     it("候補が空の応答を再試行対象として扱う", async () => {

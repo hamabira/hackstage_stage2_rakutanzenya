@@ -10,10 +10,12 @@ import type { ExtractedSubjectDraft, SubjectImportError } from "./types";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 /** Workerの実行時間に収まるよう、1回の呼び出しはここで打ち切る。 */
 export const EXTRACTION_TIMEOUT_MS = 15_000;
-/** スキーマ不適合のときだけ、合計2回まで試行する。 */
+/** 一時的な応答不良・通信障害のとき、合計2回まで試行する。 */
 export const MAX_ATTEMPTS = 2;
 
 const API_ORIGIN = "https://generativelanguage.googleapis.com";
+const DEFAULT_RETRY_DELAY_MS = 250;
+const MAX_RETRY_DELAY_MS = 1_000;
 
 export type ExtractSubjectError = Extract<
   SubjectImportError,
@@ -32,11 +34,40 @@ export interface ExtractSubjectDeps {
   timeoutMs?: number;
 }
 
-/** 1回の呼び出し結果。retryableのときだけ再試行する。 */
+/**
+ * 1回の呼び出し結果。retryableのときだけ再試行する。
+ * reasonは、再試行しても駄目だったときにどのエラーを返すかの判断に使う。
+ */
 type AttemptOutcome =
   | { kind: "success"; draft: ExtractedSubjectDraft }
-  | { kind: "retryable" }
+  | { kind: "retryable"; reason: "invalid_response" | "provider_error"; retryDelayMs: number }
   | { kind: "fatal"; error: ExtractSubjectError };
+
+function clampRetryDelay(delayMs: number): number {
+  return Math.min(Math.max(delayMs, 0), MAX_RETRY_DELAY_MS);
+}
+
+/** Retry-After は秒数またはHTTP-dateのどちらも許容される。 */
+function retryDelayFromResponse(response: Response): number {
+  const retryAfter = response.headers?.get("retry-after");
+  if (retryAfter === null || retryAfter === undefined) {
+    return DEFAULT_RETRY_DELAY_MS;
+  }
+
+  const seconds = Number(retryAfter);
+  if (Number.isFinite(seconds)) {
+    return clampRetryDelay(Math.ceil(seconds * 1_000));
+  }
+
+  const retryAt = Date.parse(retryAfter);
+  return Number.isNaN(retryAt)
+    ? DEFAULT_RETRY_DELAY_MS
+    : clampRetryDelay(retryAt - Date.now());
+}
+
+function waitForRetry(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
 
 function buildRequestBody(normalizedInput: string): string {
   return JSON.stringify({
@@ -106,24 +137,35 @@ async function runAttempt(
     if (!response.ok) {
       // 本文には入力がそのまま含まれ得るため、状態コードだけを残す。
       console.error("[subject-import] Gemini API error", { status: response.status });
+
+      // 混雑や一時的な障害は再試行する余地がある。
+      // 認証やモデル名の誤りなど恒久的な誤りは繰り返しても直らない。
+      if (response.status === 429 || response.status >= 500) {
+        return {
+          kind: "retryable",
+          reason: "provider_error",
+          retryDelayMs: retryDelayFromResponse(response),
+        };
+      }
+
       return { kind: "fatal", error: "provider_error" };
     }
 
     const payload: unknown = await response.json();
     const text = readResponseText(payload);
     if (text === null) {
-      return { kind: "retryable" };
+      return { kind: "retryable", reason: "invalid_response", retryDelayMs: DEFAULT_RETRY_DELAY_MS };
     }
 
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
     } catch {
-      return { kind: "retryable" };
+      return { kind: "retryable", reason: "invalid_response", retryDelayMs: DEFAULT_RETRY_DELAY_MS };
     }
 
     if (!isExtractedSubjectDraft(parsed)) {
-      return { kind: "retryable" };
+      return { kind: "retryable", reason: "invalid_response", retryDelayMs: DEFAULT_RETRY_DELAY_MS };
     }
 
     return { kind: "success", draft: parsed };
@@ -133,8 +175,17 @@ async function runAttempt(
       return { kind: "fatal", error: "timeout" };
     }
 
-    console.error("[subject-import] Gemini API request failed");
-    return { kind: "fatal", error: "provider_error" };
+    // 任意の例外メッセージには入力本文が含まれ得るため、種別だけを残す。
+    console.error("[subject-import] Gemini API request failed", {
+      name: error instanceof Error ? error.name : typeof error,
+    });
+
+    // 瞬間的な通信断で毎回入力し直させないよう、1回だけやり直す。
+    return {
+      kind: "retryable",
+      reason: "provider_error",
+      retryDelayMs: DEFAULT_RETRY_DELAY_MS,
+    };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -142,7 +193,7 @@ async function runAttempt(
 
 /**
  * 入力本文をGeminiへ渡し、構造化された抽出結果を得る。
- * スキーマ不適合のときだけ1回だけ再試行し、合計2回を超えて呼び出さない。
+ * 一時的な応答不良・通信障害のときだけ1回再試行し、合計2回を超えて呼び出さない。
  * 入力本文と応答本文はログへ出さない。
  */
 export async function extractSubject(
@@ -168,6 +219,8 @@ export async function extractSubject(
     timeoutMs: deps.timeoutMs ?? EXTRACTION_TIMEOUT_MS,
   };
 
+  let lastReason: ExtractSubjectError = "invalid_response";
+
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const outcome = await runAttempt(normalizedInput, config);
 
@@ -178,7 +231,13 @@ export async function extractSubject(
     if (outcome.kind === "fatal") {
       return { ok: false, error: outcome.error };
     }
+
+    lastReason = outcome.reason;
+    if (attempt < MAX_ATTEMPTS) {
+      await waitForRetry(outcome.retryDelayMs);
+    }
   }
 
-  return { ok: false, error: "invalid_response" };
+  // 最後の失敗理由をそのまま返し、通信障害と解析失敗で案内を分ける。
+  return { ok: false, error: lastReason };
 }

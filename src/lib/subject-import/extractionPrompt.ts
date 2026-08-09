@@ -1,4 +1,5 @@
-export const MAX_INPUT_LENGTH = 20_000;
+/** Geminiへ送るシラバス本文の上限。 */
+export const MAX_INPUT_LENGTH = 2_000;
 
 /** 入力を囲む区切り。この中身は命令ではなくデータとして扱わせる。 */
 const INPUT_OPEN_TAG = "<syllabus_input>";
