@@ -7,6 +7,7 @@ import {
 } from "@/components/attendance/AttendanceForm";
 import { AttendanceRecordList } from "@/components/attendance/AttendanceRecordList";
 import { Card } from "@/components/ui/Card";
+import { getTodayDateInputValue } from "@/lib/date/todayDateInputValue";
 import type { AttendanceRecord } from "@/lib/types/domain";
 
 interface AttendanceManagerProps {
@@ -14,11 +15,14 @@ interface AttendanceManagerProps {
   records: AttendanceRecord[];
 }
 
-const EMPTY_VALUE: AttendanceFormValue = {
-  classDate: "",
-  status: "present",
-  memo: "",
-};
+/** 授業日は当日を入力しての記録が大半のため、今日の日付を初期値にする。 */
+function createEmptyValue(): AttendanceFormValue {
+  return {
+    classDate: getTodayDateInputValue(),
+    status: "present",
+    memo: "",
+  };
+}
 
 /**
  * 出席記録の入力フォームと一覧をつなぐ。
@@ -26,7 +30,7 @@ const EMPTY_VALUE: AttendanceFormValue = {
  * 保存は同一授業日をキーにした上書きのため、日付を変えずに保存すれば修正になる。
  */
 export function AttendanceManager({ subjectId, records }: AttendanceManagerProps) {
-  const [value, setValue] = useState<AttendanceFormValue>(EMPTY_VALUE);
+  const [value, setValue] = useState<AttendanceFormValue>(createEmptyValue);
 
   const handleChange = useCallback((next: AttendanceFormValue) => {
     setValue(next);
