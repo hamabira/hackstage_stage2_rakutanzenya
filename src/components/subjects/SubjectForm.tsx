@@ -29,6 +29,11 @@ interface SubjectFormProps {
   action?: SubjectFormAction;
   pending?: boolean;
   serverErrors?: SubjectFormErrors;
+  /**
+   * AI解析などで作った下書き。指定すると subject / gradeItems より優先する。
+   * 初回マウント時にだけ読むため、値を差し替えるときは親が key を変えて再マウントする。
+   */
+  initialValues?: SubjectFormValues;
 }
 
 const CATEGORY_OPTIONS: Array<{ value: GradeItemCategory; label: string }> = [
@@ -96,9 +101,21 @@ export function SubjectForm({
   action,
   pending = false,
   serverErrors = {},
+  initialValues,
 }: SubjectFormProps) {
-  const nextGradeItemId = useRef(gradeItems && gradeItems.length > 0 ? gradeItems.length : 1);
+  // 追加する行のIDは初期表示の件数から続ける。ここがずれると行のkeyが衝突する。
+  const nextGradeItemId = useRef(
+    initialValues
+      ? initialValues.gradeItems.length
+      : gradeItems && gradeItems.length > 0
+        ? gradeItems.length
+        : 1,
+  );
   const [values, setValues] = useState<SubjectFormValues>(() => {
+    if (initialValues) {
+      return initialValues;
+    }
+
     const initialGradeItems = getInitialGradeItems(gradeItems);
 
     return {
