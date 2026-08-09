@@ -5,9 +5,9 @@ function Brand() {
   return (
     <Link className="flex items-center gap-2.5" href="/dashboard">
       <span className="font-display flex size-8 items-center justify-center rounded-lg bg-[#72d350] text-base font-bold text-[#20231f]">
-        楽
+        ユ
       </span>
-      <span className="font-display text-xl font-bold text-white">楽単前夜</span>
+      <span className="font-display text-xl font-bold text-white">ユル単</span>
     </Link>
   );
 }

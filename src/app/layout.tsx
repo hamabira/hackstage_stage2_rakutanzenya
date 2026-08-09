@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "楽単前夜",
+  title: "ユル単",
   description: "出席・課題・テストの目標をまとめて管理するアプリ",
 };
 

@@ -27,9 +27,9 @@ export function AuthPage({
       <section className="hidden flex-col justify-between bg-[#20231f] p-12 text-white lg:flex">
         <Link className="flex items-center gap-3" href="/">
           <span className="font-display flex size-10 items-center justify-center rounded-xl bg-[#72d350] text-xl font-bold text-[#20231f]">
-            楽
+            ユ
           </span>
-          <span className="font-display text-2xl font-bold">楽単前夜</span>
+          <span className="font-display text-2xl font-bold">ユル単</span>
         </Link>
         <div className="max-w-md">
           <p className="text-sm font-bold text-[#72d350]">学生のための成績・出席管理</p>
@@ -47,9 +47,9 @@ export function AuthPage({
         <div className="w-full max-w-md rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
           <Link className="mb-8 flex items-center gap-2 lg:hidden" href="/">
             <span className="font-display flex size-8 items-center justify-center rounded-lg bg-[#72d350] font-bold">
-              楽
+              ユ
             </span>
-            <span className="font-display text-xl font-bold">楽単前夜</span>
+            <span className="font-display text-xl font-bold">ユル単</span>
           </Link>
           <p className="text-xs font-bold text-[#337a24]">WELCOME</p>
           <h1 className="font-display mt-2 text-3xl font-bold">{title}</h1>
