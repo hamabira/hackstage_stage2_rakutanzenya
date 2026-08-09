@@ -22,6 +22,7 @@
 
 # misc
 .DS_Store
+docs/memo.md
 *.pem
 
 # debug
@@ -33,6 +34,9 @@ yarn-error.log*
 
 # graphify
 /graphify-out/
+
+# ローカル生成物(スクリーンショット等)
+/exports/
 
 # pen.dev (Pencil.dev)
 *.pen
