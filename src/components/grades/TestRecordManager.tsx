@@ -8,6 +8,7 @@ import {
 } from "@/components/grades/TestRecordForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { getTodayDateInputValue } from "@/lib/date/todayDateInputValue";
 import type { GradeItem, TestRecord } from "@/lib/types/domain";
 
 interface TestRecordManagerProps {
@@ -16,13 +17,16 @@ interface TestRecordManagerProps {
   records: TestRecord[];
 }
 
-const EMPTY_VALUE: TestRecordFormValue = {
-  recordId: "",
-  gradeItemId: "",
-  score: "",
-  recordedAt: "",
-  memo: "",
-};
+/** 実施日は当日を入力しての記録が大半のため、今日の日付を初期値にする。 */
+function createEmptyValue(): TestRecordFormValue {
+  return {
+    recordId: "",
+    gradeItemId: "",
+    score: "",
+    recordedAt: getTodayDateInputValue(),
+    memo: "",
+  };
+}
 
 /**
  * 得点記録の入力フォームと一覧をつなぐ。
@@ -33,14 +37,14 @@ export function TestRecordManager({
   gradeItems,
   records,
 }: TestRecordManagerProps) {
-  const [value, setValue] = useState<TestRecordFormValue>(EMPTY_VALUE);
+  const [value, setValue] = useState<TestRecordFormValue>(createEmptyValue);
 
   const handleChange = useCallback((next: TestRecordFormValue) => {
     setValue(next);
   }, []);
 
   const handleCancelEdit = useCallback(() => {
-    setValue(EMPTY_VALUE);
+    setValue(createEmptyValue());
   }, []);
 
   function handleEdit(record: TestRecord) {
