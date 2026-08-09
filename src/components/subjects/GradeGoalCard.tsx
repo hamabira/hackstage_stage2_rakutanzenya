@@ -1,12 +1,13 @@
 import { Card } from "@/components/ui/Card";
-import type { GradeGoalResult } from "@/lib/calc/gradeGoal";
+import type { CourseGoalResult } from "@/lib/calc/courseGoal";
+import { COURSE_GOAL_UNACHIEVABLE_MESSAGES } from "@/lib/calc/courseGoalMessages";
 import {
   GRADE_GOAL_CALCULATION_ERROR_MESSAGES,
   GRADE_GOAL_PRESENTATION,
 } from "@/lib/calc/gradeGoalMessages";
 
 interface GradeGoalCardProps {
-  result: GradeGoalResult;
+  result: CourseGoalResult;
   targetScore: number | null;
 }
 
@@ -35,7 +36,9 @@ export function GradeGoalCard({ result, targetScore }: GradeGoalCardProps) {
         </p>
       ) : result.status === "unachievable" ? (
         <p className="mt-6 text-sm text-red-700">
-          残りの評価項目で満点を取っても目標に届きません。目標点数を見直してください。
+          {COURSE_GOAL_UNACHIEVABLE_MESSAGES[
+            result.unachievableReason ?? "score_insufficient"
+          ]}
         </p>
       ) : result.requiredAverageOnRemaining === null ? (
         <p className="mt-6 text-sm text-[#697067]">

@@ -4,7 +4,8 @@ import {
   type AttendanceCalcResult,
   type AttendanceRiskLevel,
 } from "@/lib/calc/attendance";
-import { calcRequiredScore, type GradeGoalResult } from "@/lib/calc/gradeGoal";
+import { calcCourseGoal, type CourseGoalResult } from "@/lib/calc/courseGoal";
+import { calcRequiredScore } from "@/lib/calc/gradeGoal";
 import {
   summarizeGradeItemScores,
   toGradeGoalItems,
@@ -19,7 +20,7 @@ import type {
 export interface SubjectSummary {
   subject: Subject;
   attendance: AttendanceCalcResult;
-  gradeGoal: GradeGoalResult;
+  gradeGoal: CourseGoalResult;
   /** 出席として数えた回数と欠席回数の合計。 */
   recordedCount: number;
 }
@@ -51,19 +52,24 @@ export function buildSubjectSummaries(
     const attendanceSummary = summarizeAttendanceRecords(subjectAttendance);
     const gradeItemScores = summarizeGradeItemScores(subjectGradeItems, testRecords);
 
+    const attendance = calcRemainingAbsences({
+      totalClassCount: subject.totalClassCount ?? 0,
+      attendedCount: attendanceSummary.attendedCount,
+      absentCount: attendanceSummary.absentCount,
+      requiredRate: subject.attendanceRequiredRate,
+      maxAbsences: subject.attendanceMaxAbsences,
+    });
+
     return {
       subject,
       // 計算不能な科目も unavailable として返るため、1科目の失敗が他へ波及しない。
-      attendance: calcRemainingAbsences({
-        totalClassCount: subject.totalClassCount ?? 0,
-        attendedCount: attendanceSummary.attendedCount,
-        absentCount: attendanceSummary.absentCount,
-        requiredRate: subject.attendanceRequiredRate,
-        maxAbsences: subject.attendanceMaxAbsences,
-      }),
-      gradeGoal: calcRequiredScore({
-        gradeItems: toGradeGoalItems(gradeItemScores),
-        targetScore: subject.targetScore,
+      attendance,
+      gradeGoal: calcCourseGoal({
+        attendance,
+        gradeGoal: calcRequiredScore({
+          gradeItems: toGradeGoalItems(gradeItemScores),
+          targetScore: subject.targetScore,
+        }),
       }),
       recordedCount: attendanceSummary.recordedCount,
     };
